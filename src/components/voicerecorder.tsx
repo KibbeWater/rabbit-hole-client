@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 
+const mimeType = 'audio/webm';
 export function useVoiceRecorder({ onData, sampleRate }: { onData: (data: Blob) => void; sampleRate: number }) {
 	const [recording, setRecording] = useState<boolean>(false);
 	const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
@@ -8,7 +9,7 @@ export function useVoiceRecorder({ onData, sampleRate }: { onData: (data: Blob) 
 	const startRecording = useCallback(async () => {
 		const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 		const recorder = new MediaRecorder(stream, {
-			mimeType: 'audio/webm',
+			mimeType,
 			audioBitsPerSecond: 16000,
 		});
 
@@ -20,7 +21,6 @@ export function useVoiceRecorder({ onData, sampleRate }: { onData: (data: Blob) 
 		};
 
 		setMediaRecorder(recorder);
-
 		setRecording(true);
 
 		return () => {
@@ -39,5 +39,9 @@ export function useVoiceRecorder({ onData, sampleRate }: { onData: (data: Blob) 
 		}
 	}, [mediaRecorder, chunks, onData]);
 
-	return { recording, startRecording, stopRecording };
+	const isSupported = (): boolean => {
+		return MediaRecorder.isTypeSupported(mimeType);
+	};
+
+	return { recording, startRecording, stopRecording, isSupported };
 }

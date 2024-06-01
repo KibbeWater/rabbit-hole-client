@@ -121,10 +121,12 @@ export function useRabbitHole({
 			reader.onload = (event) => {
 				const result = event.target?.result;
 				if (!result || !WS.current) return;
-				const b64 = result.toString().split(',')[1];
-				const payload = JSON.stringify({ type: 'audio', data: b64 });
-				setLogs((prevLogs) => [...prevLogs, `Sending audio`]);
-				WS.current.send(payload);
+
+				if (typeof result === 'string' && result.startsWith('data:audio/wav')) {
+					const payload = JSON.stringify({ type: 'audio', data: result.toString() });
+					setLogs((prevLogs) => [...prevLogs, `Sending audio`]);
+					WS.current.send(payload);
+				}
 			};
 			reader.readAsDataURL(audio);
 		},

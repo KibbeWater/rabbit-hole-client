@@ -2,13 +2,13 @@ import { Inter } from 'next/font/google';
 import { useCallback, useEffect, useState } from 'react';
 import MicrophoneIcon from '~/components/icons/MicrophoneIcon';
 import PlusIcon from '~/components/icons/PlusIcon';
-import XMarkIcon from '~/components/icons/XMarkIcon';
 import { useRabbitHole } from '~/components/rabbithole';
 import { useVoiceRecorder } from '~/components/voicerecorder';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export default function Home() {
+	const [logs, setLogs] = useState<string[]>([]);
 	const [message, setMessage] = useState<string>('');
 	const [image, setImage] = useState<string>('');
 
@@ -20,9 +20,14 @@ export default function Home() {
 	const [editingCredentials, setEditingCredentials] = useState<boolean>(true);
 
 	useEffect(() => {
-		setImei(window.localStorage.getItem('imei') ?? '');
-		setAccountKey(window.localStorage.getItem('accountKey') ?? '');
-		setEditingCredentials(false);
+		const _imei = window.localStorage.getItem('imei');
+		const _accountKey = window.localStorage.getItem('accountKey');
+		const _url = window.localStorage.getItem('websocketUrl');
+		setImei(_imei ?? '');
+		setAccountKey(_accountKey ?? '');
+		setUrl(_url ?? '');
+
+		if (_imei && _accountKey) setEditingCredentials(false);
 	}, []);
 
 	useEffect(() => {
@@ -30,6 +35,11 @@ export default function Home() {
 		window.localStorage.setItem('imei', imei);
 		window.localStorage.setItem('accountKey', accountKey);
 	}, [editingCredentials, imei, accountKey]);
+
+	useEffect(() => {
+		if (editingUrl) return;
+		window.localStorage.setItem('websocketUrl', url);
+	}, [editingUrl, url]);
 
 	const onRegister = useCallback((imei: string, accountKey: string, data: string) => {
 		setImei(imei);
@@ -42,7 +52,7 @@ export default function Home() {
 	}, []);
 
 	const {
-		logs,
+		logs: _logs,
 		sendMessage,
 		sendAudio: _sendAudio,
 		sendPTT,
@@ -54,6 +64,19 @@ export default function Home() {
 		imei: editingCredentials ? '' : imei,
 		url: editingUrl ? '' : url,
 		onRegister,
+	});
+
+	const {
+		isSupported,
+		startRecording: _startRecording,
+		stopRecording: _stopRecording,
+		recording,
+	} = useVoiceRecorder({
+		onData: (data) => {
+			console.log('Sending audio', data);
+			_sendAudio(data);
+		},
+		sampleRate: 100,
 	});
 
 	const prompQR = () => {
@@ -127,6 +150,21 @@ export default function Home() {
 		fileInput.click();
 	};
 
+	const startRecording = () => {
+		_startRecording();
+		sendPTT(true, '');
+		console.log('Recording started');
+	};
+
+	const stopRecording = () => {
+		_stopRecording();
+		setTimeout(() => {
+			sendPTT(false, image);
+			setImage('');
+			console.log('Recording stopped');
+		}, 1000);
+	};
+
 	return (
 		<main className={`flex h-screen max-h-screen w-full flex-col gap-8 items-center p-24 overflow-hidden ${inter.className}`}>
 			<h1 className='text-xl flex-none grow-0'>Event Log</h1>
@@ -145,7 +183,7 @@ export default function Home() {
 							className='bg-primary-500 text-white bg-neutral-600 hover:bg-neutral-700 transition-all py-1 px-3 rounded-lg'
 							onClick={() => setEditingUrl((prev) => !prev)}
 						>
-							{editingUrl ? 'Appy' : 'Change'}
+							{editingUrl ? 'Connect' : 'Change'}
 						</button>
 					</div>
 					<div className='flex flex-none gap-2'>
@@ -186,7 +224,7 @@ export default function Home() {
 				</div>
 				<div className='flex flex-col grow w-full h-full bg-neutral-700 rounded-xl overflow-x-hidden'>
 					<div className='text-white flex flex-col gap-2 min-h-10 flex-grow flex-shrink w-full h-full px-2 py-6 overflow-y-auto'>
-						{logs.map((log, index) => (
+						{_logs.map((log, index) => (
 							<p key={index} className='text-sm text-wrap'>
 								{log}
 							</p>
@@ -199,7 +237,7 @@ export default function Home() {
 
 				<form className='flex gap-4 whitespace-nowrap'>
 					<div className='flex gap-2'>
-						<button
+						<label
 							className='text-white p-1 bg-neutral-600 hover:bg-neutral-700 transition-all rounded-md disabled:text-neutral-400 disabled:cursor-not-allowed disabled:bg-neutral-700'
 							onClick={(e) => {
 								e.preventDefault();
@@ -210,8 +248,8 @@ export default function Home() {
 							<div className={['transition-all', image !== '' ? 'rotate-45' : ''].join(' ')}>
 								<PlusIcon />
 							</div>
-						</button>
-						<button
+						</label>
+						<label
 							className='text-white p-1 bg-neutral-600 hover:bg-neutral-700 transition-all rounded-md'
 							onClick={(e) => {
 								e.preventDefault();
@@ -219,7 +257,23 @@ export default function Home() {
 							}}
 						>
 							<MicrophoneIcon />
-						</button>
+						</label>
+						{/* TODO: Properly implement the ability to record voice messages */}
+						{/* <label
+							className={[
+								'p-1 bg-neutral-600 hover:bg-neutral-700 transition-all rounded-md',
+								recording ? 'text-red-800' : 'text-red-500',
+							].join(' ')}
+							onClick={(e) => {
+								e.preventDefault();
+								if (!isSupported()) return alert('Audio recording is not supported on this device');
+
+								if (!recording) startRecording();
+								else stopRecording();
+							}}
+						>
+							<MicrophoneIcon />
+						</label> */}
 						<input
 							type='text'
 							className='w-full bg-neutral-700 py-1 px-3 rounded-md text-white'
