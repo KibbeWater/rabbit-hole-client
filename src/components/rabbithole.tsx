@@ -1,23 +1,31 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTTS } from './tts';
 
 export function useRabbitHole({
 	accountKey,
 	imei,
 	onRegister,
+	url,
 }: {
 	accountKey?: string;
 	imei?: string;
 	onRegister?: (imei: string, accountKey: string, data: string) => void;
+	url: string;
 }) {
 	const [logs, setLogs] = useState<string[]>([]);
 	const [authenticated, setAuthenticated] = useState<boolean>(false);
 	const [canAuthenticate, setCanAuthenticate] = useState<boolean>(false);
 
+	const WS = useRef<WebSocket | null>(null);
+
 	const { speak } = useTTS();
 
-	const WS = useMemo(() => {
-		const newWS = new WebSocket('ws://localhost:8080');
+	useEffect(() => {
+		if (!url || url === '') return;
+		console.log('Building new websocket');
+
+		const newWS = new WebSocket(url);
+		WS.current = newWS;
 
 		newWS.addEventListener('open', () => {
 			setLogs((prevLogs) => [...prevLogs, 'Connected to Rabbithole']);
@@ -57,39 +65,50 @@ export function useRabbitHole({
 
 		newWS.addEventListener('close', () => {
 			setLogs((prevLogs) => [...prevLogs, 'Disconnected from Rabbithole']);
+			setCanAuthenticate(false);
+			setAuthenticated(false);
 		});
 
 		newWS.addEventListener('error', (error) => {
 			setLogs((prevLogs) => [...prevLogs, `Error: ${JSON.stringify(error)}`]);
 		});
 
-		return newWS;
-	}, [speak, onRegister]);
+		return () => {
+			newWS.close();
+			setCanAuthenticate(false);
+			setAuthenticated(false);
+		};
+	}, [speak, onRegister, url]);
 
 	useEffect(() => {
-		if (!canAuthenticate || authenticated) return;
+		if (!canAuthenticate || authenticated || !WS.current) return;
+
+		if (accountKey === '' || imei === '') {
+			setLogs((prevLogs) => [...prevLogs, 'Account key or IMEI not provided']);
+			return;
+		}
 
 		const payload = JSON.stringify({ type: 'logon', data: { imei, accountKey } });
-		// setLogs((prevLogs) => [...prevLogs, `Authenticating with payload: ${payload}`]);
-		WS.send(payload);
+		setLogs((prevLogs) => [...prevLogs, `Authenticating with payload: ${payload}`]);
+		WS.current.send(payload);
 	}, [accountKey, imei, WS, canAuthenticate, authenticated]);
 
 	const sendMessage = useCallback(
 		(message: string) => {
-			if (!authenticated) return;
+			if (!authenticated || !WS.current) return;
 			const payload = JSON.stringify({ type: 'message', data: message });
 			setLogs((prevLogs) => [...prevLogs, `Sending message: ${payload}`]);
-			WS.send(payload);
+			WS.current.send(payload);
 		},
 		[authenticated, WS]
 	);
 
 	const sendPTT = useCallback(
 		(ptt: boolean, image: string) => {
-			if (!authenticated) return;
-			const payload = JSON.stringify({ type: 'ptt', data: { ptt, image } });
-			setLogs((prevLogs) => [...prevLogs, `Sending PTT: ${payload}`]);
-			WS.send(payload);
+			if (!authenticated || !WS.current) return;
+			const payload = JSON.stringify({ type: 'ptt', data: { active: ptt, image } });
+			setLogs((prevLogs) => [...prevLogs, `Sending PTT with status ${ptt} ${image ? 'with an image' : 'without image'}`]);
+			WS.current.send(payload);
 		},
 		[authenticated, WS]
 	);
@@ -101,11 +120,11 @@ export function useRabbitHole({
 			const reader = new FileReader();
 			reader.onload = (event) => {
 				const result = event.target?.result;
-				if (!result) return;
+				if (!result || !WS.current) return;
 				const b64 = result.toString().split(',')[1];
 				const payload = JSON.stringify({ type: 'audio', data: b64 });
-				setLogs((prevLogs) => [...prevLogs, `Sending audio: ${payload}`]);
-				WS.send(payload);
+				setLogs((prevLogs) => [...prevLogs, `Sending audio`]);
+				WS.current.send(payload);
 			};
 			reader.readAsDataURL(audio);
 		},
@@ -114,11 +133,10 @@ export function useRabbitHole({
 
 	const register = useCallback(
 		(qrcodeData: string) => {
-			console.log('Registering: ', canAuthenticate, authenticated);
-			if (!canAuthenticate || authenticated) return;
+			if (!canAuthenticate || authenticated || !WS.current) return;
 			const payload = JSON.stringify({ type: 'register', data: qrcodeData });
 			setLogs((prevLogs) => [...prevLogs, `Registering: ${payload}`]);
-			WS.send(payload);
+			WS.current.send(payload);
 		},
 		[WS, canAuthenticate, authenticated]
 	);

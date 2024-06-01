@@ -5,7 +5,6 @@ export function useTTS() {
 	const [speaking, setSpeaking] = useState<boolean>(false);
 
 	const speak = useCallback((text: string) => {
-		console.log('Saying:', text);
 		setQueue((prev) => [...prev, text]);
 	}, []);
 
@@ -22,8 +21,6 @@ export function useTTS() {
 
 	useEffect(() => {
 		if (speaking || queue.length === 0) return;
-
-		console.log('Speaking:', queue[0]);
 
 		const text = queue[0];
 		setSpeaking(true);
