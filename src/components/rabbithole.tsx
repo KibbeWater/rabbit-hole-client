@@ -89,7 +89,13 @@ export function useRabbitHole({
 		}
 
 		const payload = JSON.stringify({ type: 'logon', data: { imei, accountKey } });
-		setLogs((prevLogs) => [...prevLogs, `Authenticating with payload: ${payload}`]);
+		setLogs((prevLogs) => [
+			...prevLogs,
+			`Authenticating with payload: ${JSON.stringify({
+				type: 'logon',
+				data: { imei: '*********', accountKey: '*******************' },
+			})}`,
+		]);
 		WS.current.send(payload);
 	}, [accountKey, imei, WS, canAuthenticate, authenticated]);
 
