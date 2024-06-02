@@ -246,7 +246,7 @@ export default function Home() {
 											) : msg.dataType === 'image' ? (
 												// Since the image is base64 encoded, we can use it directly as the src attribute
 												// eslint-disable-next-line @next/next/no-img-element
-												<img src={msg.data} alt='User Image' className='rounded-lg max-h-[200px] h-full' />
+												<img src={`${msg.data}`} alt='User Image' className='rounded-lg max-h-[200px] h-full' />
 											) : (
 												<div className='flex flex-col px-2 py-1'>
 													<p className='w-full text-xs text-neutral-400'>Sent using speech recognition</p>
@@ -260,7 +260,7 @@ export default function Home() {
 										<div
 											key={msg.id}
 											className={[
-												'self-start rounded-t-lg rounded-br-lg px-4 py-3 bg-red-500 lg:max-w-[49%] md:max-w-[65%]',
+												'self-start rounded-t-lg rounded-br-lg px-4 py-3 bg-[#FF4D06] lg:max-w-[49%] md:max-w-[65%]',
 											].join(' ')}
 										>
 											<p className='text-white'>{msg.data}</p>

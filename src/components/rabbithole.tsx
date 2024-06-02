@@ -146,7 +146,7 @@ export function useRabbitHole({
 			if (!authenticated || !WS.current) return;
 			const payload = JSON.stringify({ type: 'ptt', data: { active: ptt, image } });
 			setLogs((prevLogs) => [...prevLogs, `Sending PTT with status ${ptt} ${image ? 'with an image' : 'without image'}`]);
-			addMessage(`${ptt ? 'Started' : 'Stopped'} PTT`, 'system', 'text');
+			/* addMessage(`${ptt ? 'Started' : 'Stopped'} PTT`, 'system', 'text'); */
 			if (image) addMessage(image, 'user', 'image');
 			WS.current.send(payload);
 		},
@@ -164,7 +164,7 @@ export function useRabbitHole({
 
 				if (typeof result === 'string' && result.startsWith('data:audio/wav')) {
 					const payload = JSON.stringify({ type: 'audio', data: result.toString() });
-					setLogs((prevLogs) => [...prevLogs, `Sending audio`]);
+					/* setLogs((prevLogs) => [...prevLogs, `Sending audio`]); */
 					addMessage('Sending audio', 'system', 'text');
 					WS.current.send(payload);
 				}
