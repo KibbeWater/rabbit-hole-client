@@ -53,6 +53,7 @@ export default function Home() {
 
 	const {
 		logs: _logs,
+		messages,
 		sendMessage,
 		sendAudio: _sendAudio,
 		sendPTT,
@@ -166,10 +167,11 @@ export default function Home() {
 	};
 
 	return (
-		<main className={`flex h-screen max-h-screen w-full flex-col gap-8 items-center p-24 overflow-hidden ${inter.className}`}>
-			<h1 className='text-xl flex-none grow-0'>Event Log</h1>
+		<main
+			className={`flex h-screen max-h-screen w-full flex-col gap-8 items-center lg:px-24 sm:px-12 px-4 py-8 overflow-hidden ${inter.className}`}
+		>
 			<div className='flex flex-col grow w-full h-full gap-4 overflow-hidden'>
-				<div className='w-full h-12 py-2 flex-none flex gap-8'>
+				<div className='w-full py-2 flex-none flex flex-col-reverse md:flex-row md:gap-8 gap-2'>
 					<div className='flex flex-none gap-2'>
 						<input
 							type='text'
@@ -186,7 +188,7 @@ export default function Home() {
 							{editingUrl ? 'Connect' : 'Change'}
 						</button>
 					</div>
-					<div className='flex flex-none gap-2'>
+					<div className='lg:flex hidden flex-none gap-2'>
 						<input
 							type={editingCredentials ? 'text' : 'password'}
 							placeholder='IMEI'
@@ -210,7 +212,7 @@ export default function Home() {
 							{editingCredentials ? 'Appy' : 'Change'}
 						</button>
 					</div>
-					<div className='flex gap-2 justify-end grow'>
+					<div className='flex gap-2 md:justify-end grow'>
 						<button
 							className='bg-primary-500 text-white bg-neutral-600 hover:bg-neutral-700 transition-all py-1 px-3 rounded-lg disabled:bg-neutral-700 disabled:text-neutral-400 disabled:cursor-not-allowed'
 							onClick={() => {
@@ -222,13 +224,63 @@ export default function Home() {
 						</button>
 					</div>
 				</div>
-				<div className='flex flex-col grow w-full h-full bg-neutral-700 rounded-xl overflow-x-hidden'>
-					<div className='text-white flex flex-col gap-2 min-h-10 flex-grow flex-shrink w-full h-full px-2 py-6 overflow-y-auto'>
-						{_logs.map((log, index) => (
+				<div className='flex flex-col grow w-full h-full bg-neutral-700 rounded-lg overflow-x-hidden'>
+					<div className='text-white flex flex-col-reverse gap-2 min-h-10 flex-grow flex-shrink w-full h-full px-6 py-2 overflow-y-auto'>
+						{/* {_logs.map((log, index) => (
 							<p key={index} className='text-sm text-wrap'>
 								{log}
 							</p>
-						))}
+						))} */}
+						{messages.map((msg) => {
+							switch (msg.type) {
+								case 'user':
+									return (
+										<div
+											key={msg.id}
+											className={[
+												'self-end rounded-t-lg rounded-bl-lg p-2 bg-neutral-500 lg:max-w-[49%] md:max-w-[65%]',
+											].join(' ')}
+										>
+											{msg.dataType === 'text' ? (
+												<p className='text-white px-2 py-1'>{msg.data}</p>
+											) : msg.dataType === 'image' ? (
+												// Since the image is base64 encoded, we can use it directly as the src attribute
+												// eslint-disable-next-line @next/next/no-img-element
+												<img src={msg.data} alt='User Image' className='rounded-lg max-h-[200px] h-full' />
+											) : (
+												<div className='flex flex-col px-2 py-1'>
+													<p className='w-full text-xs text-neutral-400'>Sent using speech recognition</p>
+													<p>{msg.data}</p>
+												</div>
+											)}
+										</div>
+									);
+								case 'rabbit':
+									return (
+										<div
+											key={msg.id}
+											className={[
+												'self-start rounded-t-lg rounded-br-lg px-4 py-3 bg-red-500 lg:max-w-[49%] md:max-w-[65%]',
+											].join(' ')}
+										>
+											<p className='text-white'>{msg.data}</p>
+										</div>
+									);
+								case 'system':
+									return (
+										<div
+											key={msg.id}
+											className={['self-center rounded-lg px-4 py-1 bg-neutral-600 w-min whitespace-nowrap'].join(
+												' '
+											)}
+										>
+											<p className='text-white'>{msg.data}</p>
+										</div>
+									);
+								default:
+									break;
+							}
+						})}
 					</div>
 				</div>
 			</div>
