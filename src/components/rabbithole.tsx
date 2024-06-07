@@ -86,7 +86,11 @@ export function useRabbitHole({
 					onRegister?.(imei, accountKey, responseData);
 					setLogs((prevLogs) => [...prevLogs, `Registered with data: ${responseData}`]);
 					break;
+				case 'long':
+					const images = data.data.images as string[];
+					addMessage(images.join('\n'), 'rabbit', 'image');
 				default:
+					console.log('Unknown message type', data.type, data.data);
 					break;
 			}
 		});

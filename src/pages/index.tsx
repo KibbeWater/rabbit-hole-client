@@ -263,7 +263,21 @@ export default function Home() {
 												'self-start rounded-t-lg rounded-br-lg px-4 py-3 bg-[#FF4D06] lg:max-w-[49%] md:max-w-[65%]',
 											].join(' ')}
 										>
-											<p className='text-white'>{msg.data}</p>
+											{msg.dataType === 'text' ? (
+												<p className='text-white'>{msg.data}</p>
+											) : (
+												<div className='flex gap-4'>
+													{msg.data.split('\n').map((image, idx) => (
+														// eslint-disable-next-line @next/next/no-img-element
+														<img
+															key={msg.id + idx}
+															src={image}
+															alt='Rabbit Image'
+															className='rounded-lg max-h-[200px] aspect-square object-contain h-full'
+														/>
+													))}
+												</div>
+											)}
 										</div>
 									);
 								case 'system':
