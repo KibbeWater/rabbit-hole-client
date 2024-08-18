@@ -57,6 +57,7 @@ export default function Home() {
 		sendMessage,
 		sendAudio: _sendAudio,
 		sendPTT,
+		sendRaw,
 		register,
 		canAuthenticate,
 		authenticated,
@@ -314,6 +315,22 @@ export default function Home() {
 							<div className={['transition-all', image !== '' ? 'rotate-45' : ''].join(' ')}>
 								<PlusIcon />
 							</div>
+						</label>
+						<label
+							className='text-white p-1 bg-neutral-600 hover:bg-neutral-700 transition-all rounded-md'
+							onClick={(e) => {
+								e.preventDefault();
+								sendRaw(
+									JSON.stringify({
+										global: {
+											init_link: {},
+										},
+									})
+								);
+							}}
+						>
+							<PlusIcon />
+							<PlusIcon />
 						</label>
 						<label
 							className='text-white p-1 bg-neutral-600 hover:bg-neutral-700 transition-all rounded-md'

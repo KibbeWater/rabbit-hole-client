@@ -46,7 +46,10 @@ export function useRabbitHole({
 		if (!url || url === '') return;
 		console.log('Building new websocket');
 
-		const newWS = new WebSocket(url);
+		const urlObj = new URL(url);
+		if (imei) urlObj.searchParams.append('deviceId', imei);
+
+		const newWS = new WebSocket(urlObj);
 		WS.current = newWS;
 
 		newWS.addEventListener('open', () => {
@@ -89,6 +92,11 @@ export function useRabbitHole({
 				case 'long':
 					const images = data.data.images as string[];
 					addMessage(images.join('\n'), 'rabbit', 'image');
+				case 'meeting':
+					const isActive = data.active;
+					if (isActive) {
+						addMessage('Meeting started', 'system', 'text');
+					}
 				default:
 					console.log('Unknown message type', data.type, data.data);
 					break;
@@ -112,7 +120,7 @@ export function useRabbitHole({
 			setCanAuthenticate(false);
 			setAuthenticated(false);
 		};
-	}, [speak, onRegister, url]);
+	}, [speak, onRegister, url, imei]);
 
 	useEffect(() => {
 		if (!canAuthenticate || authenticated || !WS.current) return;
@@ -189,5 +197,18 @@ export function useRabbitHole({
 		[WS, canAuthenticate, authenticated]
 	);
 
-	return { logs, messages, canAuthenticate, authenticated, sendMessage, sendPTT, sendAudio, register };
+	const sendRaw = useCallback(
+		(data: string) => {
+			if (!WS.current) return;
+			WS.current.send(JSON.stringify({ type: 'raw', data }));
+		},
+		[WS]
+	);
+
+	const stopMeeting = useCallback(() => {
+		if (!authenticated || !WS.current) return;
+		WS.current.send(JSON.stringify({ type: 'meeting', data: false }));
+	}, [authenticated, WS]);
+
+	return { logs, messages, canAuthenticate, authenticated, sendMessage, sendPTT, sendRaw, sendAudio, register, stopMeeting };
 }
